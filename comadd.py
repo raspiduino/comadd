@@ -58,6 +58,35 @@ if settingfile.read() != "":
 
 settingfile.close()
 
+def advsetexec():
+    global settings, setting, file, menubar
+
+    if settings[0] == "0":
+        setting.entryconfig("Advanced setting", state="disabled")
+    else:
+        setting.entryconfig("Advanced setting", state="normal")
+
+    for apptup in [(3, "cmd.exe"),(4, "taskmgr.exe"),(5, "powershell.exe")]:
+        i, appblock = apptup
+        if settings[i] == "1":
+            if not appblock in apps:
+                apps.append(appblock)
+        else:
+            if appblock in apps:
+                apps.remove(appblock)
+
+    if settings[6] == "1":
+        file.entryconfig("Stop session", state="disabled")
+        file.entryconfig("Exit", state="disabled")
+    else:
+        file.entryconfig("Stop session", state="normal")
+        file.entryconfig("Exit", state="normal")
+
+    if settings[7] == "1":
+        menubar.entryconfig("Setting", state="disabled")
+    else:
+        menubar.entryconfig("Setting", state="normal")
+
 # Function to rewrite the setting file
 def wsetting():
     os.remove("setting.txt")
@@ -82,12 +111,14 @@ def startclock():
         mainbutton.config(image=mainbuttonimg, command=startsession)
         messagebox.showinfo("Session ended", "Your session has ended!")
         stop()
+        advsetexec()
         subprocess.Popen.terminate(blockapp) # Kill the block.py
         stime_min = sessiontime // 60
         stime_sec = sessiontime % 60
 
 # Interactive functions
 def startsession():
+    advsetexec()
     global mainbutton
     mainbutton.config(image=mainbuttonrun, command=stop)
     global blockapp
@@ -229,6 +260,7 @@ class AskButtons():
     def change(self):
         settings[self.value] = "0" if self.lastval == "1" else "1"
         wsetting()
+        advsetexec()
         self.lastval = settings[self.value]
         self.currentval.configure(text=("Currently: " + ("Enabled" if settings[self.value] == "1" else "Disabled")))
         self.button.configure(text=("Enable" if settings[self.value] == "0" else "Disable"))
@@ -268,7 +300,11 @@ def session():
 
 def advanced():
     wadvanced = tk.Toplevel(gui)
-
+    btn1 = AskButtons(wadvanced, "Disable CMD?", 3)
+    btn2 = AskButtons(wadvanced, "Disable taskmgr?", 4)
+    btn3 = AskButtons(wadvanced, "Disable Powershell?", 5)
+    btn4 = AskButtons(wadvanced, "Disable stop button if in session time?", 6)
+    btn5 = AskButtons(wadvanced, "Disable setting in session time?", 7)
 
 def onlinehelp():
     webbrowser.open_new_tab("https://github.com/raspiduino/comadd/wiki/help")
