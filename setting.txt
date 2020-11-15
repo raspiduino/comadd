@@ -1,0 +1,5 @@
+1500
+300
+notepad.exe,cmd.exe,qemu-system-i386.exe,qemu-img.exe,powershell.exe,regedit.exe,taskmgr.exe,PDS.exe,teams.exe,gcc.exe,g++.exe,make.exe,bash,wget
+sublimetext.com,github.com,*.google.com,stackoverflow.com,qemu.org,google.com
+1,1,0
