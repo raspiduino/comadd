@@ -49,6 +49,7 @@ if settingfile.read() != "":
     breaktime = int(settingfile.readline())
     btime_min = breaktime // 60
     btime_sec = breaktime % 60
+    bonesec = 360/breaktime
     # Read apps
     apps = settingfile.readline()[:-1].split(",")
     # Read sites
@@ -66,26 +67,14 @@ def advsetexec():
     else:
         setting.entryconfig("Advanced setting", state="normal")
 
-    for apptup in [(3, "cmd.exe"),(4, "taskmgr.exe"),(5, "powershell.exe")]:
+    for apptup in [(3, "cmd.exe"), (4, "taskmgr.exe"), (5, "powershell.exe"), (8, "control.exe"), (8, "SystemSettings.exe")]:
         i, appblock = apptup
         if settings[i] == "1":
             if not appblock in apps:
                 apps.append(appblock)
         else:
             if appblock in apps:
-                apps.remove(appblock)
-
-    if settings[6] == "1":
-        file.entryconfig("Stop session", state="disabled")
-        file.entryconfig("Exit", state="disabled")
-    else:
-        file.entryconfig("Stop session", state="normal")
-        file.entryconfig("Exit", state="normal")
-
-    if settings[7] == "1":
-        menubar.entryconfig("Setting", state="disabled")
-    else:
-        menubar.entryconfig("Setting", state="normal")
+                apps.remove(appblock) 
 
 # Function to rewrite the setting file
 def wsetting():
@@ -93,6 +82,42 @@ def wsetting():
     settingfile = open("setting.txt", "a+")
     settingfile.write(str(sessiontime) + "\n" + str(breaktime) + "\n" + ",".join(apps) + "\n" + ",".join(sites) + "\n" + ",".join(settings))
     settingfile.close()
+
+def breakclock():
+    global btime_min, btime_sec
+    if not (btime_sec <= 0 and btime_min <= 0):
+        btime_sec -= 1
+        if btime_sec < 0:
+            btime_sec = 59
+            btime_min -= 1
+        canvas.itemconfigure(c1, extent=(bonesec*(btime_min*60 + btime_sec)))
+        canvas.itemconfigure(clock, text=str(btime_min) + ":" + (str(btime_sec) if btime_sec > 9 else "0" + str(btime_sec)))
+        gui.after(1000, breakclock)
+
+    else:
+        btime_min = breaktime // 60
+        btime_sec = breaktime % 60
+        messagebox.showinfo("End of breaktime!", "Back to your work!")
+        startsession()
+
+def takebreak():
+    messagebox.showinfo("Break time!", "Enjoy your breaktime now!")
+    canvas.itemconfigure(c1, fill="Blue", extent=360)
+    canvas.itemconfigure(clock, text=str(btime_min) + ":" + (str(btime_sec) if btime_sec > 9 else "0" + str(btime_sec)))
+    # Stop the block
+    subprocess.Popen.terminate(blockapp) # Kill the block.py
+    # Move the orignal host file back
+    if os.name == "nt":
+        os.system('xcopy /Y hosts.bck "C:\Windows\System32\drivers\etc\hosts"') # Move the host file back
+    else:
+        os.system("mv -f hosts.bck /etc/hosts")
+
+    file.entryconfig("Stop session", state="normal")
+    file.entryconfig("Exit", state="normal")
+    menubar.entryconfig("Setting", state="normal")
+    os.chmod("comadd.py", stat.S_IRWXU)
+    os.chmod("setting.txt", stat.S_IRWXU)
+    breakclock()
 
 # Clock timeout function
 def startclock():
@@ -104,14 +129,20 @@ def startclock():
             stime_min -= 1
         canvas.itemconfigure(c1, extent=(onesec*(stime_min*60 + stime_sec)))
         canvas.itemconfigure(clock, text=str(stime_min) + ":" + (str(stime_sec) if stime_sec > 9 else "0" + str(stime_sec)))
+        
+        if ((stime_min*60 + stime_sec) == (sessiontime//2)) and (settings[2] == "0"):
+            # Breaktime
+            takebreak()
+
         gui.after(1000, startclock)
+
     else:
         # Time ended, reset time
         global mainbutton
         mainbutton.config(image=mainbuttonimg, command=startsession)
         messagebox.showinfo("Session ended", "Your session has ended!")
         stop()
-        advsetexec()
+        #advsetexec()
         subprocess.Popen.terminate(blockapp) # Kill the block.py
         stime_min = sessiontime // 60
         stime_sec = sessiontime % 60
@@ -119,8 +150,22 @@ def startclock():
 # Interactive functions
 def startsession():
     advsetexec()
+
+    # Advanced block
+    if settings[6] == "1":
+        file.entryconfig("Stop session", state="disabled")
+        file.entryconfig("Exit", state="disabled")
+
+    if settings[7] == "1":
+        menubar.entryconfig("Setting", state="disabled")
+
+    if settings[9] == "1":
+        os.chmod("comadd.py", stat.S_IREAD)
+        os.chmod("setting.txt", stat.S_IREAD)
+
     global mainbutton
     mainbutton.config(image=mainbuttonrun, command=stop)
+
     global blockapp
     if os.name == "nt":
         blockapp = subprocess.Popen(['python', 'block.py'])
@@ -132,11 +177,13 @@ def startsession():
         # Edit Linux/MacOS host file
         os.system("cp -f /etc/hosts hosts") # Copy the host file to current directory
         os.system("cp -f hosts hosts.bck") # Backup host file
+
     hosts = open("hosts", "a+") # Open and add sites to host file
     hosts.write("\n# This rules created by ComAdd.py in session time\n")
     for site in sites:
         hosts.write("127.0.0.1 " + site + "\n")
     hosts.close()
+
     if os.name == "nt":
         os.system('xcopy /Y hosts "C:\Windows\System32\drivers\etc\"') # Move the host file back
     else:
@@ -154,6 +201,12 @@ def stop():
         os.system('xcopy /Y hosts.bck "C:\Windows\System32\drivers\etc\hosts"') # Move the host file back
     else:
         os.system("mv -f hosts.bck /etc/hosts")
+
+    file.entryconfig("Stop session", state="normal")
+    file.entryconfig("Exit", state="normal")
+    menubar.entryconfig("Setting", state="normal")
+    os.chmod("comadd.py", stat.S_IRWXU)
+    os.chmod("setting.txt", stat.S_IRWXU)
 
 def exitapp():
     stop()
@@ -295,7 +348,7 @@ def session():
     ttk.Label(wsession, text="_________________________________").pack()
 
     btn1 = AskButtons(wsession, "Advanced settings?", 0)
-    btn2 = AskButtons(wsession, "Disable Internet in session time?", 1)
+    #btn2 = AskButtons(wsession, "Unlimited session time?", 1) # Don't enable this!
     btn3 = AskButtons(wsession, "Disable breaktime?", 2)
 
 def advanced():
@@ -305,6 +358,8 @@ def advanced():
     btn3 = AskButtons(wadvanced, "Disable Powershell?", 5)
     btn4 = AskButtons(wadvanced, "Disable stop button if in session time?", 6)
     btn5 = AskButtons(wadvanced, "Disable setting in session time?", 7)
+    btn6 = AskButtons(wadvanced, "Disable system setting in session time?\n(Windows Only)", 8)
+    btn7 = AskButtons(wadvanced, "Protect program from being edited or \ndeleted?", 9)
 
 def onlinehelp():
     webbrowser.open_new_tab("https://github.com/raspiduino/comadd/wiki/help")
@@ -360,20 +415,10 @@ mainbutton.pack(side = tk.TOP)
 # Create menubar
 menubar = Menu()
 
-# Special session menu
-customsession = Menu(menubar, tearoff=0)
-customsession.add_command(label="Block apps only session", command=apponly)
-customsession.add_command(label="Block websites only session", command=webonly)
-customsession.add_command(label="Block the Internet", command=blockinternet)
-customsession.add_command(label="Short focus (5 min)", command=shortfocus)
-customsession.add_separator()
-customsession.add_command(label="Custom", command=csession)
-
 # File menu
 file = Menu(menubar, tearoff=0)
 file.add_command(label="Start session", command=startsession)
 file.add_command(label="Stop session", command=stop)
-file.add_cascade(label="Custom session", menu=customsession)
 file.add_separator()
 file.add_command(label="Exit", command=exitapp)
 

@@ -1,0 +1,5 @@
+# Gitignore file
+setting.txt
+hosts
+hosts.bck
+__pycache__
