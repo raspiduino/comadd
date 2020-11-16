@@ -7,6 +7,7 @@ cd comadd
 python comadd.py
 ```
 Or you can just download it under <a href="https://github.com/raspiduino/comadd/releases">Release</a>
+<br>Remember to edit the setting the first time you use it!
 ## Requirement
 This script need root/admin permission for editing hosts file (to block websites). If you don't have root/admin account, please edit the code to disable hosts edit.
 <br>Don't use the extension now!
