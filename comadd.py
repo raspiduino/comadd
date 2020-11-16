@@ -373,17 +373,6 @@ def sweb():
 def timespend():
     pass
 
-def apponly():
-    pass
-def webonly():
-    pass
-def blockinternet():
-    pass
-def shortfocus():
-    pass
-def csession():
-    pass
-
 # Create GUI
 gui = tk.Tk()
 if os.name == "nt":
