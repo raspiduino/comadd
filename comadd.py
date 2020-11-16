@@ -415,11 +415,11 @@ menubar.add_cascade(label="File", menu=file)
 
 
 # Statistics menu
-statistics = Menu(menubar, tearoff=0)
-statistics.add_command(label="Apps usage", command=sapp)
-statistics.add_command(label="Web usage", command=sweb)
-statistics.add_command(label="Time spend", command=timespend)
-menubar.add_cascade(label="Statistics", menu=statistics)
+#statistics = Menu(menubar, tearoff=0)
+#statistics.add_command(label="Apps usage", command=sapp)
+#statistics.add_command(label="Web usage", command=sweb)
+#statistics.add_command(label="Time spend", command=timespend)
+#menubar.add_cascade(label="Statistics", menu=statistics)
 
 # Setting menu
 setting = Menu(menubar, tearoff=0)
