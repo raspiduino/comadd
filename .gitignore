@@ -2,7 +2,7 @@
 setting.txt
 hosts
 hosts.bck
-__pycache__\
+__pycache__/
 push.cmd
 *.txt
 *.cmd
