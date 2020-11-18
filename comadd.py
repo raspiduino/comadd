@@ -20,6 +20,7 @@ import admin # https://github.com/raspiduino/pythonadmin
 import webbrowser
 import time
 import subprocess
+import stat
 
 if not admin.isUserAdmin():
     # Not run as root yet
@@ -28,6 +29,8 @@ if not admin.isUserAdmin():
     else:
         admin.runAsAdmin("python3 comadd.py")
     exit(1)
+
+#ttk.Style().theme_use("winnative")
 
 # Read setting
 # Setting file layout:
@@ -230,7 +233,7 @@ def blocklist():
         entry.pack()
         def getinput():
             global applist
-            applist.insert(ttk.END, str(entry.get()))
+            applist.insert(tk.END, str(entry.get()))
             global apps
             apps.append(str(entry.get()))
             wsetting()
@@ -269,7 +272,7 @@ def blocklist():
         entry.pack()
         def getinput():
             global sitelist
-            sitelist.insert(ttk.END, str(entry.get()))
+            sitelist.insert(tk.END, str(entry.get()))
             global sites
             sites.append(str(entry.get()))
             wsetting()
