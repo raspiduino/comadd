@@ -1,5 +1,5 @@
 # ComAdd
-This script prevent you from distractions
+This script prevent you from distractions. Support for time statistics.
 ## Installation
 ```bash
 git clone https://github.com/raspiduino/comadd.git
