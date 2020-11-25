@@ -41,9 +41,9 @@ def send_url():
     prev_url = parent_url
 
     if os.name == "nt":
-    	log = open("weblog\\weblog"+date.today().strftime("%d%m%y")+".txt", "a+")
+    	log = open("logs\\weblog"+date.today().strftime("%d%m%y")+".txt", "a+")
     else:
-        log = open("weblog/weblog"+date.today().strftime("%d%m%y")+".txt", "a+")
+        log = open("logs/weblog"+date.today().strftime("%d%m%y")+".txt", "a+")
     log.write("\n" + str(url_viewtime))
     log.close()
 

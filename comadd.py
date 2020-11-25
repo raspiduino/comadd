@@ -21,6 +21,9 @@ import webbrowser
 import time
 import subprocess
 import stat
+import json
+from datetime import date
+import matplotlib.pyplot as plt
 
 if not admin.isUserAdmin():
     # Not run as root yet
@@ -111,7 +114,7 @@ def takebreak():
     subprocess.Popen.terminate(blockapp) # Kill the block.py
     # Move the orignal host file back
     if os.name == "nt":
-        os.system('xcopy /Y hosts.bck "C:\Windows\System32\drivers\etc\hosts"') # Move the host file back
+        os.system('xcopy /Y hosts.bck "C:\\Windows\\System32\\drivers\\etc\\hosts"') # Move the host file back
     else:
         os.system("mv -f hosts.bck /etc/hosts")
 
@@ -173,7 +176,7 @@ def startsession():
     if os.name == "nt":
         blockapp = subprocess.Popen(['python', 'block.py'])
         # Edit Windows host file
-        os.system('copy /Y "C:\Windows\System32\drivers\etc\hosts" hosts') # Copy the host file to current directory
+        os.system('copy /Y "C:\\Windows\\System32\\drivers\\etc\\hosts" hosts') # Copy the host file to current directory
         os.system("copy /Y hosts hosts.bck") # Backup host file
     else:
         blockapp = subprocess.Popen(['python3', 'block.py'])
@@ -188,7 +191,7 @@ def startsession():
     hosts.close()
 
     if os.name == "nt":
-        os.system('xcopy /Y hosts "C:\Windows\System32\drivers\etc\"') # Move the host file back
+        os.system('xcopy /Y hosts "C:\\Windows\\System32\\drivers\\etc\\"') # Move the host file back
     else:
         os.system("mv -f hosts.edit /etc/hosts")
     # Call startclock()
@@ -201,7 +204,7 @@ def stop():
     stime_min = 0
     # Move the orignal host file back
     if os.name == "nt":
-        os.system('xcopy /Y hosts.bck "C:\Windows\System32\drivers\etc\hosts"') # Move the host file back
+        os.system('xcopy /Y hosts.bck "C:\\Windows\\System32\\drivers\\etc\\hosts"') # Move the host file back
     else:
         os.system("mv -f hosts.bck /etc/hosts")
 
@@ -370,13 +373,40 @@ def about():
     messagebox.showinfo("About", "ComAdd v1.0\nCopyright @raspiduino on github.com\nDate created 1/11/2020")
 
 def sapp():
-    pass
+    # Load json file
+    if os.name == "nt":
+        jsonfile = open("logs\\\\applog"+date.today().strftime("%d%m%y")+".txt", "r")
+    else:
+        jsonfile = open("logs/applog"+date.today().strftime("%d%m%y")+".txt", "r")
+    glist = list(dict(json.loads(jsonfile.read().split("\n")[-2].replace("'", '"'))).items())
 
-#def sweb():
-#    if os.name == "nt":
-#        os.system("python track.py")
-#    else:
-#        os.system("python3 track.py")
+    # Draw graph
+    gsites = []
+    gtimes = []
+    for i in glist:
+        x,y = i
+        gsites.append(x)
+        gtimes.append(y)
+    plt.pie(gtimes, explode=tuple(0 for i in range(len(gsites))), labels=gsites, autopct='%1.1f%%', shadow=True, startangle=0)
+    plt.show()
+
+def sweb():
+    # Load json file
+    if os.name == "nt":
+        jsonfile = open("logs\\weblog"+date.today().strftime("%d%m%y")+".txt", "r")
+    else:
+        jsonfile = open("logs/weblog"+date.today().strftime("%d%m%y")+".txt", "r")
+    glist = list(dict(json.loads(jsonfile.read().split("\n")[-1].replace("'", '"'))).items())[1:]
+
+    # Draw graph
+    gsites = []
+    gtimes = []
+    for i in glist:
+        x,y = i
+        gsites.append(x)
+        gtimes.append(y)
+    plt.pie(gtimes, explode=tuple(0 for i in range(len(gsites))), labels=gsites, autopct='%1.1f%%', shadow=True, startangle=0)
+    plt.show()
 
 def timespend():
     pass
@@ -422,11 +452,11 @@ file.add_command(label="Exit", command=exitapp)
 menubar.add_cascade(label="File", menu=file)
 
 # Statistics menu
-#statistics = Menu(menubar, tearoff=0)
-#statistics.add_command(label="Apps usage", command=sapp)
-#statistics.add_command(label="Web usage", command=sweb)
-#statistics.add_command(label="Time spend", command=timespend)
-#menubar.add_cascade(label="Statistics", menu=statistics)
+statistics = Menu(menubar, tearoff=0)
+statistics.add_command(label="Apps usage", command=sapp)
+statistics.add_command(label="Web usage", command=sweb)
+statistics.add_command(label="Time spend", command=timespend)
+menubar.add_cascade(label="Statistics", menu=statistics)
 
 # Setting menu
 setting = Menu(menubar, tearoff=0)
@@ -442,5 +472,12 @@ helpmenu.add_command(label="About", command=about)
 menubar.add_cascade(label="Help", menu=helpmenu)
 
 gui.configure(menu=menubar)
+
+if os.name == "nt":
+    os.system("start python track.py")
+    os.system("start python apptrack.py")
+else:
+    os.system("nohup python3 track.py &")
+    os.system("nohup python3 apptrack.py &")
 
 gui.mainloop()
