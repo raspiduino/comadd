@@ -22,7 +22,7 @@ import time
 import subprocess
 import stat
 import json
-from datetime import date
+from datetime import date, timedelta
 import matplotlib.pyplot as plt
 
 if not admin.isUserAdmin():
@@ -81,6 +81,19 @@ def advsetexec():
         else:
             if appblock in apps:
                 apps.remove(appblock) 
+
+    if settings[10] == "1":
+        if os.name == "nt":
+            os.system("start /min python apptrack.py")
+        else:
+            os.system("nohup python3 track.py &")
+
+    if settings[11] == "1":
+        if os.name == "nt":
+            os.system("start /min python track.py")
+        else:
+            os.system("nohup python3 apptrack.py &")
+
 
 # Function to rewrite the setting file
 def wsetting():
@@ -366,6 +379,8 @@ def advanced():
     btn5 = AskButtons(wadvanced, "Disable setting in session time?", 7)
     btn6 = AskButtons(wadvanced, "Disable system setting in session time?\n(Windows Only)", 8)
     btn7 = AskButtons(wadvanced, "Protect program from being edited or \ndeleted?", 9)
+    btn8 = AskButtons(wadvanced, "Enable app time tracker?", 10)
+    btn9 = AskButtons(wadvanced, "Enable web time tracker?", 11)
 
 def onlinehelp():
     webbrowser.open_new_tab("https://github.com/raspiduino/comadd/wiki/help")
@@ -379,15 +394,16 @@ def sapp():
     else:
         jsonfile = open("logs/applog"+date.today().strftime("%d%m%y")+".txt", "r")
     glist = list(dict(json.loads(jsonfile.read().split("\n")[-2].replace("'", '"'))).items())
+    jsonfile.close()
 
     # Draw graph
-    gsites = []
+    gapps = []
     gtimes = []
     for i in glist:
         x,y = i
-        gsites.append(x)
+        gapps.append(x + " (" + str(y//60) + " min " + str(y%60) + " sec)")
         gtimes.append(y)
-    plt.pie(gtimes, explode=tuple(0 for i in range(len(gsites))), labels=gsites, autopct='%1.1f%%', shadow=True, startangle=0)
+    plt.pie(gtimes, explode=tuple(0 for i in range(len(gapps))), labels=gapps, autopct='%1.1f%%', shadow=True, startangle=0)
     plt.show()
 
 def sweb():
@@ -397,19 +413,88 @@ def sweb():
     else:
         jsonfile = open("logs/weblog"+date.today().strftime("%d%m%y")+".txt", "r")
     glist = list(dict(json.loads(jsonfile.read().split("\n")[-1].replace("'", '"'))).items())[1:]
+    jsonfile.close()
 
     # Draw graph
     gsites = []
     gtimes = []
     for i in glist:
         x,y = i
-        gsites.append(x)
+        gsites.append(x + " (" + str(y//60) + " min " + str(y%60) + " sec)")
         gtimes.append(y)
     plt.pie(gtimes, explode=tuple(0 for i in range(len(gsites))), labels=gsites, autopct='%1.1f%%', shadow=True, startangle=0)
     plt.show()
 
 def timespend():
-    pass
+    wtimespend = tk.Toplevel(gui)
+
+    if os.name == "nt":
+        appfile = open("logs\\applog"+date.today().strftime("%d%m%y")+".txt", "r")
+        webfile = open("logs\\weblog"+date.today().strftime("%d%m%y")+".txt", "r")
+        pappfile = open("logs\\applog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
+        pwebfile = open("logs\\weblog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
+    else:
+        appfile = open("logs/applog"+date.today().strftime("%d%m%y")+".txt", "r")
+        webfile = open("logs/weblog"+date.today().strftime("%d%m%y")+".txt", "r")
+        pappfile = open("logs/applog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
+        pwebfile = open("logs/weblog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
+
+    glist1 = list(dict(json.loads(appfile.read().split("\n")[-2].replace("'", '"'))).items())[1:]
+    pglist1 = list(dict(json.loads(pappfile.read().split("\n")[-2].replace("'", '"'))).items())[1:]
+    appfile.close()
+    pappfile.close()
+    gapps = []
+    gappst = []
+    totalapptime = 0
+    ptotalapptime = 0
+    for i in glist1:
+        x,y = i
+        gapps.append(x)
+        gappst.append(y)
+        totalapptime += y
+
+    for i in pglist1:
+        x,y = i
+        ptotalapptime += y
+
+    tk.Label(wtimespend, text="Total time spend on the apps: " + str(totalapptime)).pack()
+    tk.Label(wtimespend, text="Most used app: " + gapps[gappst.index(max(gappst))] + " (" + str(max(gappst)//60) + "min" + str(max(gappst)%60) + "sec)").pack()
+    atimer = ptotalapptime - totalapptime
+    if atimer < 0:
+        tk.Label(wtimespend, text=("You spend more time than yesterday! (+" + str(atimer) + ")"), fg="red").pack()
+    else:
+        tk.Label(wtimespend, text=("You spend less time than yesterday! (-" + str(atimer) + ")"), fg="green").pack()
+
+    glist2 = list(dict(json.loads(webfile.read().split("\n")[-1].replace("'", '"'))).items())[1:]
+    pglist2 = list(dict(json.loads(pwebfile.read().split("\n")[-1].replace("'", '"'))).items())[1:]
+    webfile.close()
+    pwebfile.close()
+    gwebs = []
+    gwebst = []
+    totalwebtime = 0
+    ptotalwebtime = 0
+    for i in glist2:
+        x,y = i
+        gwebs.append(x)
+        gwebst.append(y)
+        totalwebtime += y
+
+    for i in pglist2:
+        x,y = i
+        ptotalwebtime += y
+
+    tk.Label(wtimespend, text="Total time spend on the webs: " + str(totalwebtime)).pack()
+    tk.Label(wtimespend, text="Most used web: " + gwebs[gwebst.index(max(gwebst))] + " (" + str(max(gwebst)//60) + "min" + str(max(gwebst)%60) + "sec)").pack()
+    wtimer = ptotalwebtime - totalwebtime
+    if wtimer < 0:
+        tk.Label(wtimespend, text=("You spend more time than yesterday! (+" + str(wtimer) + ")"), fg="red").pack()
+    else:
+        tk.Label(wtimespend, text=("You spend less time than yesterday! (-" + str(wtimer) + ")"), fg="green").pack()
+
+    if (wtimer + atimer) < 0:
+        tk.Label(wtimespend, text=("Overall: You spend more time than yesterday! (+" + str(wtimer + atimer) + ")"), fg="red").pack()
+    else:
+        tk.Label(wtimespend, text=("Overall: You spend less time than yesterday! (-" + str(wtimer + atimer) + ")"), fg="green").pack()
 
 # Create GUI
 gui = tk.Tk()
@@ -473,11 +558,6 @@ menubar.add_cascade(label="Help", menu=helpmenu)
 
 gui.configure(menu=menubar)
 
-if os.name == "nt":
-    os.system("start python track.py")
-    os.system("start python apptrack.py")
-else:
-    os.system("nohup python3 track.py &")
-    os.system("nohup python3 apptrack.py &")
+advsetexec()
 
 gui.mainloop()
