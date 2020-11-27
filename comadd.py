@@ -23,7 +23,8 @@ import subprocess
 import stat
 import json
 from datetime import date, timedelta
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 if not admin.isUserAdmin():
     # Not run as root yet
@@ -388,6 +389,11 @@ def about():
     messagebox.showinfo("About", "ComAdd v1.0\nCopyright @raspiduino on github.com\nDate created 1/11/2020")
 
 def sapp():
+    wsapp = tk.Toplevel(gui)
+    frame = tk.Frame(wsapp)
+    frame.grid(row=1, column=0)
+    fig = Figure()
+
     # Load json file
     if os.name == "nt":
         jsonfile = open("logs\\\\applog"+date.today().strftime("%d%m%y")+".txt", "r")
@@ -403,10 +409,24 @@ def sapp():
         x,y = i
         gapps.append(x + " (" + str(y//60) + " min " + str(y%60) + " sec)")
         gtimes.append(y)
-    plt.pie(gtimes, explode=tuple(0 for i in range(len(gapps))), labels=gapps, autopct='%1.1f%%', shadow=True, startangle=0)
-    plt.show()
+
+    fig.add_subplot(111).pie(gtimes, explode=tuple(0 for i in range(len(gapps))), labels=gapps, autopct='%1.1f%%', shadow=True, startangle=0)
+    FigureCanvasTkAgg(fig, frame).get_tk_widget().grid(row=0,column=0)
+
+    tk.Label(wsapp, text="List of tracked app and time:").grid(row=0, column=1)
+    listbox = tk.Listbox(wsapp, width=30)
+    listbox.grid(row=1, column=1)
+    gtimes_ = gtimes
+    gtimes.sort()
+    for i in gtimes:
+        listbox.insert(tk.ACTIVE, gapps[gtimes_.index(i)] + str(i))
 
 def sweb():
+    wsweb = tk.Toplevel(gui)
+    frame = tk.Frame(wsweb)
+    frame.grid(row=1, column=0)
+    fig = Figure()
+
     # Load json file
     if os.name == "nt":
         jsonfile = open("logs\\weblog"+date.today().strftime("%d%m%y")+".txt", "r")
@@ -422,27 +442,49 @@ def sweb():
         x,y = i
         gsites.append(x + " (" + str(y//60) + " min " + str(y%60) + " sec)")
         gtimes.append(y)
-    plt.pie(gtimes, explode=tuple(0 for i in range(len(gsites))), labels=gsites, autopct='%1.1f%%', shadow=True, startangle=0)
-    plt.show()
+    fig.add_subplot(111).pie(gtimes, explode=tuple(0 for i in range(len(gsites))), labels=gsites, autopct='%1.1f%%', shadow=True, startangle=0)
+    FigureCanvasTkAgg(fig, frame).get_tk_widget().grid(row=0, column=0)
+
+    tk.Label(wsweb, text="List of tracked web and time:").grid(row=0, column=1)
+    listbox = tk.Listbox(wsweb, width=30)
+    listbox.grid(row=1, column=1)
+    gtimes_ = gtimes
+    gtimes.sort()
+    for i in gtimes:
+        listbox.insert(tk.ACTIVE, gsites[gtimes_.index(i)] + str(i))
 
 def timespend():
     wtimespend = tk.Toplevel(gui)
+    frame = tk.Frame(wtimespend)
+    frame.grid(row=1, column=0)
+    fig = Figure()
 
-    if os.name == "nt":
-        appfile = open("logs\\applog"+date.today().strftime("%d%m%y")+".txt", "r")
-        webfile = open("logs\\weblog"+date.today().strftime("%d%m%y")+".txt", "r")
-        pappfile = open("logs\\applog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
-        pwebfile = open("logs\\weblog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
-    else:
-        appfile = open("logs/applog"+date.today().strftime("%d%m%y")+".txt", "r")
-        webfile = open("logs/weblog"+date.today().strftime("%d%m%y")+".txt", "r")
-        pappfile = open("logs/applog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
-        pwebfile = open("logs/weblog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
+    try:
+        if os.name == "nt":
+            appfile = open("logs\\applog"+date.today().strftime("%d%m%y")+".txt", "r")
+            webfile = open("logs\\weblog"+date.today().strftime("%d%m%y")+".txt", "r")
+            pappfile = open("logs\\applog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
+            pwebfile = open("logs\\weblog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
+        else:
+            appfile = open("logs/applog"+date.today().strftime("%d%m%y")+".txt", "r")
+            webfile = open("logs/weblog"+date.today().strftime("%d%m%y")+".txt", "r")
+            pappfile = open("logs/applog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
+            pwebfile = open("logs/weblog"+(date.today() - timedelta(days=1)).strftime("%d%m%y")+".txt", "r")
+
+    except:
+        pass
+
+    # Calculate the total app using time
 
     glist1 = list(dict(json.loads(appfile.read().split("\n")[-2].replace("'", '"'))).items())[1:]
-    pglist1 = list(dict(json.loads(pappfile.read().split("\n")[-2].replace("'", '"'))).items())[1:]
     appfile.close()
-    pappfile.close()
+    try:
+        pglist1 = list(dict(json.loads(pappfile.read().split("\n")[-2].replace("'", '"'))).items())[1:]
+        pappfile.close()
+
+    except:
+        pass
+    
     gapps = []
     gappst = []
     totalapptime = 0
@@ -452,23 +494,34 @@ def timespend():
         gapps.append(x)
         gappst.append(y)
         totalapptime += y
+    try:
+        for i in pglist1:
+            x,y = i
+            ptotalapptime += y
+    except:
+        pass
 
-    for i in pglist1:
-        x,y = i
-        ptotalapptime += y
+    tk.Label(wtimespend, text="Total time spend on the apps: " + str(totalapptime)).place(x=300, y=0)
+    tk.Label(wtimespend, text="Most used app: " + gapps[gappst.index(max(gappst))] + " (" + str(max(gappst)//60) + "min" + str(max(gappst)%60) + "sec)").place(x=300, y=5)
+    try:
+        atimer = ptotalapptime - totalapptime
+        if atimer < 0:
+            tk.Label(wtimespend, text=("You spend more time than yesterday! (+" + str(atimer) + ")"), fg="red").place(x=300, y=10)
+        else:
+            tk.Label(wtimespend, text=("You spend less time than yesterday! (-" + str(atimer) + ")"), fg="green").place(x=300, y=15)
+    except:
+        pass
 
-    tk.Label(wtimespend, text="Total time spend on the apps: " + str(totalapptime)).pack()
-    tk.Label(wtimespend, text="Most used app: " + gapps[gappst.index(max(gappst))] + " (" + str(max(gappst)//60) + "min" + str(max(gappst)%60) + "sec)").pack()
-    atimer = ptotalapptime - totalapptime
-    if atimer < 0:
-        tk.Label(wtimespend, text=("You spend more time than yesterday! (+" + str(atimer) + ")"), fg="red").pack()
-    else:
-        tk.Label(wtimespend, text=("You spend less time than yesterday! (-" + str(atimer) + ")"), fg="green").pack()
+    # Calculate the total web time
 
-    glist2 = list(dict(json.loads(webfile.read().split("\n")[-1].replace("'", '"'))).items())[1:]
-    pglist2 = list(dict(json.loads(pwebfile.read().split("\n")[-1].replace("'", '"'))).items())[1:]
+    glist2 = list(dict(json.loads(webfile.read().split("\n")[-1].replace("'", '"'))).items())[2:]
     webfile.close()
-    pwebfile.close()
+    try:
+        pglist2 = list(dict(json.loads(pwebfile.read().split("\n")[-1].replace("'", '"'))).items())[2:]
+        pwebfile.close()
+    except:
+        pass
+
     gwebs = []
     gwebst = []
     totalwebtime = 0
@@ -478,23 +531,70 @@ def timespend():
         gwebs.append(x)
         gwebst.append(y)
         totalwebtime += y
+    try:
+        for i in pglist2:
+            x,y = i
+            ptotalwebtime += y
+    except:
+        pass
 
-    for i in pglist2:
-        x,y = i
-        ptotalwebtime += y
+    tk.Label(wtimespend, text="Total time spend on the webs: " + str(totalwebtime)).place(x=300, y=20)
+    tk.Label(wtimespend, text="Most used web: " + gwebs[gwebst.index(max(gwebst))] + " (" + str(max(gwebst)//60) + "min" + str(max(gwebst)%60) + "sec)").place(x=300, y=25)
+    try:
+        wtimer = ptotalwebtime - totalwebtime
+        if wtimer < 0:
+            tk.Label(wtimespend, text=("You spend more time than yesterday! (+" + str(wtimer) + ")"), fg="red").place(x=300, y=30)
+        else:
+            tk.Label(wtimespend, text=("You spend less time than yesterday! (-" + str(wtimer) + ")"), fg="green").place(x=300, y=35)
 
-    tk.Label(wtimespend, text="Total time spend on the webs: " + str(totalwebtime)).pack()
-    tk.Label(wtimespend, text="Most used web: " + gwebs[gwebst.index(max(gwebst))] + " (" + str(max(gwebst)//60) + "min" + str(max(gwebst)%60) + "sec)").pack()
-    wtimer = ptotalwebtime - totalwebtime
-    if wtimer < 0:
-        tk.Label(wtimespend, text=("You spend more time than yesterday! (+" + str(wtimer) + ")"), fg="red").pack()
-    else:
-        tk.Label(wtimespend, text=("You spend less time than yesterday! (-" + str(wtimer) + ")"), fg="green").pack()
+        if (wtimer + atimer) < 0:
+            tk.Label(wtimespend, text=("Overall: You spend more time than yesterday! (+" + str(wtimer + atimer) + ")"), fg="red").place(x=300, y=40)
+        else:
+            tk.Label(wtimespend, text=("Overall: You spend less time than yesterday! (-" + str(wtimer + atimer) + ")"), fg="green").place(x=300, y=45)
 
-    if (wtimer + atimer) < 0:
-        tk.Label(wtimespend, text=("Overall: You spend more time than yesterday! (+" + str(wtimer + atimer) + ")"), fg="red").pack()
-    else:
-        tk.Label(wtimespend, text=("Overall: You spend less time than yesterday! (-" + str(wtimer + atimer) + ")"), fg="green").pack()
+        # Draw the graph of total time in the last 5 days
+
+        totaltime = [(totalapptime+totalwebtime)/3600, (ptotalapptime+ptotalwebtime)/3600]
+        days = [date.today().strftime("%d/%m/%y"), (date.today() - timedelta(days=1)).strftime("%d/%m/%y")]
+
+        for i in range(2, 5):
+            try:
+                if os.name == "nt":
+                    pappfile = open("logs\\applog"+(date.today() - timedelta(days=i)).strftime("%d%m%y")+".txt", "r")
+                    pwebfile = open("logs\\weblog"+(date.today() - timedelta(days=i)).strftime("%d%m%y")+".txt", "r")
+                else:
+                    pappfile = open("logs/applog"+(date.today() - timedelta(days=i)).strftime("%d%m%y")+".txt", "r")
+                    pwebfile = open("logs/weblog"+(date.today() - timedelta(days=i)).strftime("%d%m%y")+".txt", "r")
+
+                apptime = list(dict(json.loads(pappfile.read().split("\n")[-2].replace("'", '"'))).items())[1:]
+                webtime = list(dict(json.loads(pwebfile.read().split("\n")[-1].replace("'", '"'))).items())[2:]
+                pappfile.close()
+                pwebfile.close()
+
+                t = 0
+
+                for i in apptime:
+                    x,y = i
+                    t += y
+
+                for i in webtime:
+                    x,y = i
+                    t += y
+
+                totaltime.append(t/3600)
+                days.append((date.today() - timedelta(days=i)).strftime("%d/%m/%y"))
+        
+            except:
+                pass
+
+        myfig = fig.add_subplot(111)
+        myfig.plot(days, totaltime)
+        myfig.xlabel("Dates")
+        myfig.ylabel("Time usuage (hours)")
+        FigureCanvasTkAgg(fig, frame).get_tk_widget().place(x=0, y=0)
+
+    except:
+        tk.Label(wtimespend, text="No graph availble!").place(x=150, y=250)
 
 # Create GUI
 gui = tk.Tk()
