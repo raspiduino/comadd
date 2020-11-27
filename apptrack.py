@@ -13,7 +13,10 @@ if os.name == "nt":
     while True:
         currentw = win32gui.GetWindowText(win32gui.GetForegroundWindow())
         if lastw != currentw:
-            appdict[lastw[:20]] = atime # Add to dict
+            if not lastw in appdict:
+                appdict[lastw[:20]] = atime # Add to dict
+            else:
+                appdict[lastw[:20]] += atime # Add the time to existed name
             # Save to log
             logfile = open("logs\\applog"+date.today().strftime("%d%m%y")+".txt", "a+")
             logfile.write(str(appdict) + "\n")
@@ -29,7 +32,10 @@ else:
     while True:
         currentw = subprocess.check_output(['xdotool', 'getactivewindow', 'getwindowname'])
         if lastw != currentw:
-            appdict[lastw[:20]] = atime # Add to dict
+            if not lastw in appdict:
+                appdict[lastw[:20]] = atime # Add to dict
+            else:
+                appdict[lastw[:20]] += atime # Add the time to existed name
             # Save to log
             logfile = open("logs\\applog"+date.today().strftime("%d%m%y")+".txt", "a+")
             logfile.write(str(appdict) + "\n")
